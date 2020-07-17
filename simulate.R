@@ -54,7 +54,7 @@ g_tests <-
   labs(fill = NULL) +
   scale_fill_manual(values = test_colors) + 
   scale_y_continuous(labels = grkmisc::format_pretty_num()) +
-  scale_x_datetime(date_breaks = "1 month", date_labels = "%b", expand = expansion()) + 
+  scale_x_datetime(date_breaks = "1 month", date_labels = "%B", expand = expansion()) + 
   labs(
     title = "Simulated COVID-19 test results",
     subtitle = glue::glue(
@@ -94,7 +94,7 @@ g_perc_pos <-
   geom_line(size = 1, show.legend = FALSE) +
   scale_color_manual(values = type_colors, guide = "none") + 
   scale_linetype_manual(values = c("solid", "dashed", "twodash"), guide = "none") + 
-  scale_x_datetime(date_breaks = "1 month", date_labels = "%b", expand = expansion()) +
+  scale_x_datetime(date_breaks = "1 month", date_labels = "%B", expand = expansion()) +
   scale_y_continuous(labels = scales::percent_format(1), limits = c(0, .83)) +
   geom_segment(
     data = NULL,
