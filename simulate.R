@@ -67,3 +67,41 @@ ggsave(here::here("plots", "testing.png"),
 
 # plot percent positivity -------------------------------------------------
 
+g_perc_pos <- tests %>% 
+  mutate(percent_smooth = slider::slide_dbl(percent_pos, mean, .before = 7, .complete = TRUE)) %>%
+  pivot_longer(c(percent_pos, cumulative_percent_pos, percent_smooth), names_to = "type") %>%
+  mutate(type = case_when(type == "percent_pos" ~ "Previous day",
+                          type == "percent_smooth" ~ "7-day average",
+                          type == "cumulative_percent_pos" ~ "Cumulative (DOH)")) %>%
+  mutate(type = fct_relevel(type, "Previous day", "7-day average")) %>%
+  ggplot() +
+  aes(date, y = value, color = type, linetype = type) +
+  geom_line() +
+  scale_color_manual(values = c("#440154", "#6baa75", "#3e78b2")) + 
+  scale_linetype_manual(values = c("solid", "dashed", "twodash")) + 
+  scale_x_datetime(date_breaks = "1 month", date_labels = "%b", expand = expansion()) +
+  scale_y_continuous(labels = scales::percent_format(1), limits = c(0, .8)) +
+  theme_minimal(14) +
+  theme(
+    strip.text = element_text(face = "bold", size = 18),
+    legend.position = c(0.15, .86),
+    legend.title = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+  ) + 
+  plot_annotation(
+    title = "COVID-19 test positivity",
+    subtitle = "Daily reports if using previous day, 7-day average, or cumulative total",
+    caption = "github.com/tgerke/percent-positivity",
+    theme = theme(
+      plot.title = element_text(hjust = 0, size = 18, face = "plain"),
+      plot.margin = margin(0.5, 0.5, 0.5, 0.5, unit = "lines"),
+      plot.subtitle = element_text(margin = margin(b = 1.25, unit = "lines")),
+      plot.caption = element_text(color = "#444444")
+    )
+  ) + 
+  labs(x = NULL, y = NULL)
+
+ggsave(here::here("plots", "perc_pos.png"), 
+       g_perc_pos, width = 5, height = 4, dpi = 150, scale = 1.5)
