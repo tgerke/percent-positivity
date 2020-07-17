@@ -81,7 +81,8 @@ type_colors <- c('Previous day' = "#440154",
                  '7-day average' = "#6baa75",
                  'Cumulative (DOH)' = "#3e78b2")
 
-g_perc_pos <- tests %>% 
+g_perc_pos <-
+  tests %>% 
   mutate(percent_smooth = slider::slide_dbl(percent_pos, mean, .before = 7, .complete = TRUE)) %>%
   pivot_longer(c(percent_pos, cumulative_percent_pos, percent_smooth), names_to = "type") %>%
   mutate(type = case_when(type == "percent_pos" ~ "Previous day",
@@ -90,14 +91,40 @@ g_perc_pos <- tests %>%
   mutate(type = fct_relevel(type, "Previous day", "7-day average")) %>%
   ggplot() +
   aes(date, y = value, color = type, linetype = type) +
-  geom_line() +
-  scale_color_manual(values = type_colors) + 
-  scale_linetype_manual(values = c("solid", "dashed", "twodash")) + 
+  geom_line(size = 1, show.legend = FALSE) +
+  scale_color_manual(values = type_colors, guide = "none") + 
+  scale_linetype_manual(values = c("solid", "dashed", "twodash"), guide = "none") + 
   scale_x_datetime(date_breaks = "1 month", date_labels = "%b", expand = expansion()) +
-  scale_y_continuous(labels = scales::percent_format(1), limits = c(0, .8)) +
-  theme(
-    legend.position = c(0.15, .86),
-    legend.title = element_blank()) + 
+  scale_y_continuous(labels = scales::percent_format(1), limits = c(0, .83)) +
+  geom_segment(
+    data = NULL,
+    mapping = 
+      aes(x = as_datetime(ymd("2020-03-22")),
+          xend = as_datetime(ymd("2020-04-15")),
+          y = .83, yend = .83),
+    color = type_colors[1],
+    size = .8
+  ) + 
+  geom_segment(
+    data = NULL,
+    mapping = 
+      aes(x = as_datetime(ymd("2020-04-17")),
+          xend = as_datetime(ymd("2020-05-13")),
+          y = .83, yend = .83),
+    color = type_colors[2],
+    linetype = "dashed",
+    size = .8
+  ) +     
+  geom_segment(
+    data = NULL,
+    mapping = 
+      aes(x = as_datetime(ymd("2020-05-20")),
+          xend = as_datetime(ymd("2020-06-26")),
+          y = .83, yend = .83),
+    color = type_colors[3],
+    linetype = "twodash",
+    size = .8
+  ) +     
   labs(
     title = "COVID-19 test percent positivity",
     subtitle = glue::glue(
@@ -109,9 +136,12 @@ g_perc_pos <- tests %>%
       "<strong style = 'color:{type_colors['Cumulative (DOH)']}'>cumulative average</strong>"),
     caption = glue::glue(
       "Code: github.com/tgerke/percent-positivity<br>",
-      "Twitter: @travisgerke")
-    ) +
-  labs(x = NULL, y = NULL)
+      "Twitter: @travisgerke"),
+    x = NULL, y = NULL) +
+  theme(
+      plot.title = element_markdown(face = "plain", margin=margin(30,0,-25,0)),
+      plot.subtitle = element_markdown(face = "plain", margin=margin(30,0,-5,0)),
+      plot.margin = margin(-1, 0.5, 0.5, 0.5, unit = "lines"))
 
 ggsave(here::here("plots", "perc_pos.png"), 
        g_perc_pos, width = 5, height = 4, dpi = 300, scale = 1.5)
