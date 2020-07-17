@@ -2,7 +2,22 @@
 
 library(tidyverse)
 library(lubridate)
-library(patchwork)
+library(ggtext)
+#library(patchwork)
+
+theme_set(
+  firasans::theme_ipsum_fsc(
+    axis_text_family = "Fira Sans Condensed",
+    axis_text_size = 10, 
+    axis_title_size = 14,
+    axis_title_just = "cc") +
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank(),
+          plot.title = element_markdown(face = "plain"),
+          plot.subtitle = element_markdown(),
+          plot.caption = element_markdown(),
+          plot.title.position = "plot")
+)
 
 # simulate data -----------------------------------------------------------
 
@@ -22,7 +37,11 @@ tests <- tests %>%
 
 # plot test counts --------------------------------------------------------
 
-g_tests <- tests %>% 
+test_colors <- c('Positive' = "#440154", 
+                 'Negative' = "#a9a9a9")
+
+g_tests <- 
+  tests %>% 
   pivot_longer(cols = c(positives, negatives), 
                names_to = "status") %>%
   mutate(status = 
@@ -31,41 +50,36 @@ g_tests <- tests %>%
                      TRUE ~ as.character(status))) %>%
   ggplot() +
   aes(x = date, y = value, fill = status) + 
-  geom_bar(stat = "identity", position = "stack") + 
+  geom_bar(stat = "identity", position = "stack", show.legend = FALSE) + 
   labs(fill = NULL) +
-  scale_fill_manual(
-    values = c(
-      Negative = "#dddddd",
-      Positive = "#440154"
-    )
-  ) + 
+  scale_fill_manual(values = test_colors) + 
   scale_y_continuous(labels = grkmisc::format_pretty_num()) +
-  scale_x_datetime(date_breaks = "1 month", date_labels = "%b", expand = expansion()) +
-  theme_minimal(14) +
-  theme(
-    strip.text = element_text(face = "bold", size = 18),
-    legend.position = c(0.1, .9),
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.minor.y = element_blank(),
-  ) + 
-  plot_annotation(
+  scale_x_datetime(date_breaks = "1 month", date_labels = "%b", expand = expansion()) + 
+  labs(
     title = "Simulated COVID-19 test results",
-    subtitle = "New tests from 2020-02-01 through 2020-07-31",
-    caption = "github.com/tgerke/percent-positivity",
-    theme = theme(
-      plot.title = element_text(hjust = 0, size = 18, face = "plain"),
-      plot.margin = margin(0.5, 0.5, 0.5, 0.5, unit = "lines"),
-      plot.subtitle = element_text(margin = margin(b = 1.25, unit = "lines")),
-      plot.caption = element_text(color = "#444444")
-    )
-  ) + 
-  labs(x = NULL, y = NULL)
+    subtitle = glue::glue(
+      "New ",
+      "<strong style = 'color:{test_colors['Positive']}'>positive</strong>",
+      " and ",
+      "<strong style = 'color:{test_colors['Negative']}'>negative</strong>",
+      " tests (Feb-Jul)"),
+    caption = glue::glue(
+      "Code: github.com/tgerke/percent-positivity<br>",
+      "Twitter: @travisgerke"), 
+    x = NULL, y = NULL) + 
+  theme(
+    plot.title = element_markdown(face = "plain", margin=margin(70,0,-25,0)),
+    plot.subtitle = element_markdown(face = "plain", margin=margin(30,0,-30,0)),
+    plot.margin = margin(-4, 0.5, 0.5, 0.5, unit = "lines"))
 
 ggsave(here::here("plots", "testing.png"), 
-       g_tests, width = 5, height = 4, dpi = 150, scale = 1.5)
+       g_tests, width = 5, height = 4, dpi = 300, scale = 1.5)
 
 # plot percent positivity -------------------------------------------------
+
+type_colors <- c('Previous day' = "#440154", 
+                 '7-day average' = "#6baa75",
+                 'Cumulative (DOH)' = "#3e78b2")
 
 g_perc_pos <- tests %>% 
   mutate(percent_smooth = slider::slide_dbl(percent_pos, mean, .before = 7, .complete = TRUE)) %>%
@@ -77,31 +91,27 @@ g_perc_pos <- tests %>%
   ggplot() +
   aes(date, y = value, color = type, linetype = type) +
   geom_line() +
-  scale_color_manual(values = c("#440154", "#6baa75", "#3e78b2")) + 
+  scale_color_manual(values = type_colors) + 
   scale_linetype_manual(values = c("solid", "dashed", "twodash")) + 
   scale_x_datetime(date_breaks = "1 month", date_labels = "%b", expand = expansion()) +
   scale_y_continuous(labels = scales::percent_format(1), limits = c(0, .8)) +
-  theme_minimal(14) +
   theme(
-    strip.text = element_text(face = "bold", size = 18),
     legend.position = c(0.15, .86),
-    legend.title = element_blank(),
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.minor.y = element_blank(),
-  ) + 
-  plot_annotation(
-    title = "COVID-19 test positivity",
-    subtitle = "Daily reports if using previous day, 7-day average, or cumulative total",
-    caption = "github.com/tgerke/percent-positivity",
-    theme = theme(
-      plot.title = element_text(hjust = 0, size = 18, face = "plain"),
-      plot.margin = margin(0.5, 0.5, 0.5, 0.5, unit = "lines"),
-      plot.subtitle = element_text(margin = margin(b = 1.25, unit = "lines")),
-      plot.caption = element_text(color = "#444444")
-    )
-  ) + 
+    legend.title = element_blank()) + 
+  labs(
+    title = "COVID-19 test percent positivity",
+    subtitle = glue::glue(
+      "Daily positivity reports if using ",
+      "<strong style = 'color:{type_colors['Previous day']}'>previous day</strong>",
+      ", ",
+      "<strong style = 'color:{type_colors['7-day average']}'>7-day average</strong>",
+      ", or ",
+      "<strong style = 'color:{type_colors['Cumulative (DOH)']}'>cumulative average</strong>"),
+    caption = glue::glue(
+      "Code: github.com/tgerke/percent-positivity<br>",
+      "Twitter: @travisgerke")
+    ) +
   labs(x = NULL, y = NULL)
 
 ggsave(here::here("plots", "perc_pos.png"), 
-       g_perc_pos, width = 5, height = 4, dpi = 150, scale = 1.5)
+       g_perc_pos, width = 5, height = 4, dpi = 300, scale = 1.5)
